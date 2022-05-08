@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿
+using Microsoft.EntityFrameworkCore;
 using ShopOnline.Api.Data;
 using ShopOnline.Api.Entities;
 using ShopOnline.Api.Repositories.Contracts;
@@ -14,22 +15,24 @@ namespace ShopOnline.Api.Repositories
         {
             this.shopOnlineDbContext = shopOnlineDbContext;
         }
+
         private async Task<bool> CartItemExists(int cartId, int productId)
         {
-            return await this.shopOnlineDbContext.CartItems.AnyAsync(c=>c.CartId == cartId && 
-                                                                        c.ProductId == productId);
+            return await this.shopOnlineDbContext.CartItems.AnyAsync(c => c.CartId == cartId &&
+                                                                     c.ProductId == productId);
+
         }
-        public async Task<CartItem> AddItem(CartItemToAddDto cartItemAddDto)
+        public async Task<CartItem> AddItem(CartItemToAddDto cartItemToAddDto)
         {
-            if (await CartItemExists(cartItemAddDto.CartId, cartItemAddDto.ProductId) == false)
+            if (await CartItemExists(cartItemToAddDto.CartId, cartItemToAddDto.ProductId) == false)
             {
                 var item = await (from product in this.shopOnlineDbContext.Products
-                                  where product.Id == cartItemAddDto.ProductId
+                                  where product.Id == cartItemToAddDto.ProductId
                                   select new CartItem
                                   {
-                                      CartId = cartItemAddDto.CartId,
+                                      CartId = cartItemToAddDto.CartId,
                                       ProductId = product.Id,
-                                      Qty = cartItemAddDto.Qty,
+                                      Qty = cartItemToAddDto.Qty
                                   }).SingleOrDefaultAsync();
 
                 if (item != null)
@@ -41,14 +44,24 @@ namespace ShopOnline.Api.Repositories
             }
 
             return null;
+
         }
 
-        public Task<CartItem> DeleteItem(int id)
+        public async Task<CartItem> DeleteItem(int id)
         {
-            throw new NotImplementedException();
+            var item = await this.shopOnlineDbContext.CartItems.FindAsync(id);
+
+            if (item != null)
+            {
+                this.shopOnlineDbContext.CartItems.Remove(item);
+                await this.shopOnlineDbContext.SaveChangesAsync();
+            }
+            
+            return item;
+
         }
 
-        public async Task<CartItem?> GetItem(int id)
+        public async Task<CartItem> GetItem(int id)
         {
             return await (from cart in this.shopOnlineDbContext.Carts
                           join cartItem in this.shopOnlineDbContext.CartItems
@@ -78,9 +91,18 @@ namespace ShopOnline.Api.Repositories
                           }).ToListAsync();
         }
 
-        public Task<CartItem> UpdateQty(int id, CartItemQtyUpdateDto cartItemQtyUpdateDto)
+        public async Task<CartItem> UpdateQty(int id, CartItemQtyUpdateDto cartItemQtyUpdateDto)
         {
-            throw new NotImplementedException();
+            var item = await this.shopOnlineDbContext.CartItems.FindAsync(id);
+
+            if (item != null)
+            {
+                item.Qty = cartItemQtyUpdateDto.Qty;
+                await this.shopOnlineDbContext.SaveChangesAsync();
+                return item;
+            }
+
+            return null;
         }
     }
 }

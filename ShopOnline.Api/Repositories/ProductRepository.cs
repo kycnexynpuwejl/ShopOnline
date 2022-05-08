@@ -13,27 +13,42 @@ namespace ShopOnline.Api.Repositories
         {
             this.shopOnlineDbContext = shopOnlineDbContext;
         }
-        async Task<IEnumerable<ProductCategory>> IProductRepository.GetCategories()
+        public async Task<IEnumerable<ProductCategory>> GetCategories()
         {
             var categories = await this.shopOnlineDbContext.ProductCategories.ToListAsync();
-            return categories;
+           
+            return categories; 
+        
         }
 
-        async Task<ProductCategory> IProductRepository.GetCategory(int id)
+        public async Task<ProductCategory> GetCategory(int id)
         {
-            var category = await this.shopOnlineDbContext.ProductCategories.SingleOrDefaultAsync(c => c.Id == id);
+            var category = await shopOnlineDbContext.ProductCategories.SingleOrDefaultAsync(c => c.Id == id);
             return category;
         }
 
-        async Task<Product> IProductRepository.GetItem(int id)
+        public async Task<Product> GetItem(int id)
         {
-            var product = await this.shopOnlineDbContext.Products.FindAsync(id);
+            var product = await shopOnlineDbContext.Products
+                                .Include(p => p.ProductCategory)
+                                .SingleOrDefaultAsync(p => p.Id == id);
             return product;
         }
 
-        async Task<IEnumerable<Product>> IProductRepository.GetItems()
+        public async Task<IEnumerable<Product>> GetItems()
         {
-            var products = await this.shopOnlineDbContext.Products.ToListAsync();
+            var products = await this.shopOnlineDbContext.Products
+                                     .Include(p => p.ProductCategory).ToListAsync();
+
+            return products;
+        
+        }
+
+        public async Task<IEnumerable<Product>> GetItemsByCategory(int id)
+        {
+            var products = await this.shopOnlineDbContext.Products
+                                     .Include(p => p.ProductCategory)
+                                     .Where(p => p.CategoryId == id).ToListAsync();
             return products;
         }
     }
